@@ -67,9 +67,16 @@ export function activate(context: vscode.ExtensionContext) {
   // Register an event handler for when a text document is closed.
   let closeDisposable = vscode.workspace.onDidCloseTextDocument((document: vscode.TextDocument) => {
     if (document === cdataFile) {
-      cdataEditor = undefined;
+      if (cdataEditor) {
+        cdataEditor.hide();
+        cdataEditor = undefined;
+      }
       cdataFile = undefined;
     } else if (document === xmlFile) {
+      if (cdataEditor) {
+        cdataEditor.hide();
+        cdataEditor = undefined;
+      }
       xmlEditor = undefined;
       xmlFile = undefined;
     }

@@ -6,6 +6,8 @@ let xmlEditor: vscode.TextEditor | undefined;
 let cdataFile: vscode.TextDocument | undefined;
 let xmlFile: vscode.TextDocument | undefined;
 
+let programmingLanguage: string = "javascript";
+
 export function activate(context: vscode.ExtensionContext) {
     // Register an event handler for when an XML file is opened.
     let disposable = vscode.workspace.onDidOpenTextDocument((document: vscode.TextDocument) => {
@@ -19,8 +21,8 @@ export function activate(context: vscode.ExtensionContext) {
             // Extract the content inside CDATA tags.
             const cdataContent = extractCDataContent(xmlContent);
 
-            // Analyze and highlight the JavaScript code.
-            openInNewWindow(cdataContent);
+            // Open that content in a new tab and set the language to a provided one.
+            openInNewWindow(cdataContent, programmingLanguage);
 
             // Store a reference to the CDATA editor.
             cdataEditor = vscode.window.activeTextEditor;
@@ -68,6 +70,7 @@ export function activate(context: vscode.ExtensionContext) {
     });
 
     // Register an event handler for when a text document is closed.
+    // Also automatically close the cdataEditor when the XML file is closed
     let closeDisposable = vscode.workspace.onDidCloseTextDocument((document: vscode.TextDocument) => {
         if (cdataFile && document === cdataFile) {
             if (cdataEditor) {
@@ -106,8 +109,15 @@ function extractCDataContent(xmlContent: string): string {
     return '';
 }
 
-async function openInNewWindow(code: string) {
-    const languageId = 'javascript';
+// Function to get the new XML document content with modified CDATA content.
+function getUpdatedXMLContent(xmlContent: string, cdataContent: string): string {
+    return xmlContent.replace(/<!\[CDATA\[(.*?)]]>/gs, `<![CDATA[${cdataContent}]]>`);
+}
+
+// Function to open the matched CDATA content in a new window side-by-side
+// While asking the user if he wants to do so
+async function openInNewWindow(code: string, programmingLanguage: string) {
+    const languageId = programmingLanguage;
 
     const userChoice = await vscode.window.showInformationMessage(
         'Do you want to open the CDATA content in a new side-by-side file?',
@@ -133,11 +143,6 @@ async function openInNewWindow(code: string) {
         cdataEditor = editor;
         cdataFile = document;
     }
-}
-
-// Function to get the new XML document content with modified CDATA content.
-function getUpdatedXMLContent(xmlContent: string, cdataContent: string): string {
-    return xmlContent.replace(/<!\[CDATA\[(.*?)]]>/gs, `<![CDATA[${cdataContent}]]>`);
 }
 
 // This method is called when the extension is deactivated.

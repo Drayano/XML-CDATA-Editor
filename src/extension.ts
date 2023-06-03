@@ -1,10 +1,8 @@
 import * as vscode from 'vscode';
 
-let cdataEditor: vscode.TextEditor | undefined;
 let xmlEditor: vscode.TextEditor | undefined;
-
-let cdataFile: vscode.TextDocument | undefined;
 let xmlFile: vscode.TextDocument | undefined;
+let cdataFiles: vscode.TextDocument[] = [];
 
 let programmingLanguage: string = "javascript";
 
@@ -13,136 +11,107 @@ export function activate(context: vscode.ExtensionContext) {
     let disposable = vscode.workspace.onDidOpenTextDocument((document: vscode.TextDocument) => {
         // Check if the opened file has an XML language ID.
         if (document.languageId === 'xml') {
-            // Get the text content of the XML file.
-            const xmlContent = document.getText();
-            xmlFile = document;
-            xmlEditor = vscode.window.activeTextEditor;
+            // Prompt the user to open associated CDATA tags.
+            const openCDATAPrompt = vscode.window.showInformationMessage('Open associated CDATA tags?', 'Yes', 'No');
 
-            // Extract the content inside CDATA tags.
-            const cdataContent = extractCDataContent(xmlContent);
+            openCDATAPrompt.then((choice) => {
+                if (choice === 'Yes') {
+                    // Get the text content of the XML file.
+                    const xmlContent = document.getText();
+                    xmlFile = document;
+                    xmlEditor = vscode.window.activeTextEditor;
 
-            // Open that content in a new tab and set the language to a provided one.
-            openInNewWindow(cdataContent, programmingLanguage);
+                    // Extract the content inside CDATA tags.
+                    const cdataContent = extractCDataContent(xmlContent);
 
-            // Store a reference to the CDATA editor.
-            cdataEditor = vscode.window.activeTextEditor;
-
-            // Register an event handler for text changes in the CDATA editor.
-            const cdataDisposable = vscode.workspace.onDidChangeTextDocument(
-                async (event: vscode.TextDocumentChangeEvent) => {
-                    if (cdataFile && event.document === cdataFile) {
-                        // Retrieve the modified CDATA content.
-                        const modifiedCdataContent = event.document.getText();
-
-                        // Update the XML document with the modified CDATA content.
-                        if (xmlFile) {
-                            const updatedXmlContent = getUpdatedXMLContent(xmlFile.getText(), modifiedCdataContent);
-
-                            // Apply the changes to the XML file.
-                            const edit = new vscode.WorkspaceEdit();
-                            edit.replace(xmlFile.uri, new vscode.Range(0, 0, xmlFile.lineCount, 0), updatedXmlContent);
-                            await vscode.workspace.applyEdit(edit);
-                        }
-                    }
+                    // Open each CDATA content in a new file.
+                    cdataContent.forEach((content, index) => {
+                        openInNewWindow(content, programmingLanguage, index);
+                    });
                 }
-            );
-
-            // Register an event handler for text changes in the XML editor.
-            const xmlDisposable = vscode.workspace.onDidChangeTextDocument(
-                async (event: vscode.TextDocumentChangeEvent) => {
-                    if (xmlFile && event.document === xmlFile) {
-                        // Retrieve the modified XML content.
-                        const modifiedXmlContent = event.document.getText();
-                        const modifiedCdataContent = extractCDataContent(modifiedXmlContent);
-
-                        // Update the CDATA document with the modified XML content.
-                        if (cdataFile) {
-                            const edit = new vscode.WorkspaceEdit();
-                            edit.replace(cdataFile.uri, new vscode.Range(0, 0, cdataFile.lineCount, 0), modifiedCdataContent);
-                            await vscode.workspace.applyEdit(edit);
-                        }
-                    }
-                }
-            );
-
-            context.subscriptions.push(cdataDisposable, xmlDisposable);
+            });
         }
     });
 
-    // Register an event handler for when a text document is closed.
-    // Also automatically close the cdataEditor when the XML file is closed
-    let closeDisposable = vscode.workspace.onDidCloseTextDocument((document: vscode.TextDocument) => {
-        if (cdataFile && document === cdataFile) {
-            if (cdataEditor) {
-                cdataEditor.hide();
-                cdataEditor = undefined;
-            }
+    context.subscriptions.push(disposable);
+}
 
-            cdataFile = undefined;
-        } 
-        
-        else if (xmlFile && document === xmlFile) {
-            if (cdataEditor) {
-                cdataEditor.hide();
-                cdataEditor = undefined;
-            }
+// Function to open the matched CDATA content in a new file
+function openInNewWindow(code: string, programmingLanguage: string, index: number) {
+    const languageId = programmingLanguage;
 
-            xmlEditor = undefined;
-            xmlFile = undefined;
-        }
+    vscode.workspace.openTextDocument({
+        language: languageId,
+        content: code,
+    }).then((document) => {
+        vscode.window.showTextDocument(document, {
+            preserveFocus: true,
+            viewColumn: vscode.ViewColumn.Beside,
+        });
+
+        // Change the document language to the specified programming language
+        vscode.languages.setTextDocumentLanguage(document, languageId);
+
+        // Save the document to the cdataFiles array
+        cdataFiles[index] = document;
+
+        // Register an event handler for text changes in the CDATA editor.
+        const disposable = vscode.workspace.onDidChangeTextDocument(
+            async (event: vscode.TextDocumentChangeEvent) => {
+                // Find the index of the current CDATA document in the cdataFiles array
+                const currentIndex = cdataFiles.findIndex((file) => file === event.document);
+                if (currentIndex !== -1) {
+                    // Retrieve the modified CDATA content.
+                    const modifiedCdataContent = event.document.getText();
+
+                    // Update the XML document with the modified CDATA content.
+                    if (xmlFile) {
+                        const updatedXmlContent = getUpdatedXMLContent(xmlFile.getText(), modifiedCdataContent, currentIndex);
+
+                        // Apply the changes to the XML file.
+                        const edit = new vscode.WorkspaceEdit();
+                        edit.replace(xmlFile.uri, new vscode.Range(0, 0, xmlFile.lineCount, 0), updatedXmlContent);
+                        await vscode.workspace.applyEdit(edit);
+                    }
+                }
+            }
+        );
     });
-
-    context.subscriptions.push(disposable, closeDisposable);
 }
 
 // Function to extract content inside CDATA tags using regex.
-function extractCDataContent(xmlContent: string): string {
+function extractCDataContent(xmlContent: string): string[] {
     const regex = /<!\[CDATA\[(.*?)]]>/gs;
     const matches = xmlContent.match(regex);
 
     if (matches && matches.length > 0) {
         // Remove the CDATA tags from each match.
-        const cdataContent = matches.map((match) => match.replace(/<!\[CDATA\[|\]\]>/g, '')).join('');
+        const cdataContent = matches.map((match) => match.replace(/<!\[CDATA\[|\]\]>/g, ''));
         return cdataContent;
     }
 
-    return '';
+    return [];
 }
 
 // Function to get the new XML document content with modified CDATA content.
-function getUpdatedXMLContent(xmlContent: string, cdataContent: string): string {
-    return xmlContent.replace(/<!\[CDATA\[(.*?)]]>/gs, `<![CDATA[${cdataContent}]]>`);
-}
+function getUpdatedXMLContent(xmlContent: string, cdataContent: string, index: number): string {
+    const regex = /<!\[CDATA\[(.*?)]]>/gs;
+    let match;
+    let count = 0;
+    let updatedXmlContent = xmlContent;
 
-// Function to open the matched CDATA content in a new window side-by-side
-// While asking the user if he wants to do so
-async function openInNewWindow(code: string, programmingLanguage: string) {
-    const languageId = programmingLanguage;
-
-    const userChoice = await vscode.window.showInformationMessage(
-        'Do you want to open the CDATA content in a new side-by-side file?',
-        { modal: false },
-        'Yes',
-        'No'
-    );
-
-    if (userChoice === 'Yes') {
-        const document = await vscode.workspace.openTextDocument({
-            language: languageId,
-            content: code,
-        });
-
-        const editor = await vscode.window.showTextDocument(document, {
-            preserveFocus: true,
-            viewColumn: vscode.ViewColumn.Two,
-        });
-
-        // Change the document language to JavaScript
-        await vscode.languages.setTextDocumentLanguage(editor.document, languageId);
-
-        cdataEditor = editor;
-        cdataFile = document;
+    // Replace the corresponding CDATA tag at the given index
+    while ((match = regex.exec(xmlContent)) !== null) {
+        if (count === index) {
+            const start = match.index;
+            const end = start + match[0].length;
+            updatedXmlContent = updatedXmlContent.substring(0, start) + `<![CDATA[${cdataContent}]]>` + updatedXmlContent.substring(end);
+            break;
+        }
+        count++;
     }
+
+    return updatedXmlContent;
 }
 
 // This method is called when the extension is deactivated.

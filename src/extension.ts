@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as vscode from 'vscode';
 
 let cdataEditor: vscode.TextEditor | undefined;
@@ -29,17 +28,19 @@ export function activate(context: vscode.ExtensionContext) {
       // Register an event handler for text changes in the CDATA editor.
       const cdataDisposable = vscode.workspace.onDidChangeTextDocument(
         async (event: vscode.TextDocumentChangeEvent) => {
-          if (event.document === cdataFile) {
+          if (cdataFile && event.document === cdataFile) {
             // Retrieve the modified CDATA content.
             const modifiedCdataContent = event.document.getText();
 
             // Update the XML document with the modified CDATA content.
-            const updatedXmlContent = getUpdatedXMLContent(xmlFile!.getText(), modifiedCdataContent);
+            if (xmlFile) {
+              const updatedXmlContent = getUpdatedXMLContent(xmlFile.getText(), modifiedCdataContent);
 
-            // Apply the changes to the XML file.
-            const edit = new vscode.WorkspaceEdit();
-            edit.replace(xmlFile!.uri, new vscode.Range(0, 0, xmlFile!.lineCount, 0), updatedXmlContent);
-            await vscode.workspace.applyEdit(edit);
+              // Apply the changes to the XML file.
+              const edit = new vscode.WorkspaceEdit();
+              edit.replace(xmlFile.uri, new vscode.Range(0, 0, xmlFile.lineCount, 0), updatedXmlContent);
+              await vscode.workspace.applyEdit(edit);
+            }
           }
         }
       );
@@ -47,15 +48,17 @@ export function activate(context: vscode.ExtensionContext) {
       // Register an event handler for text changes in the XML editor.
       const xmlDisposable = vscode.workspace.onDidChangeTextDocument(
         async (event: vscode.TextDocumentChangeEvent) => {
-          if (event.document === xmlFile) {
+          if (xmlFile && event.document === xmlFile) {
             // Retrieve the modified XML content.
             const modifiedXmlContent = event.document.getText();
             const modifiedCdataContent = extractCDataContent(modifiedXmlContent);
 
             // Update the CDATA document with the modified XML content.
-            const edit = new vscode.WorkspaceEdit();
-            edit.replace(cdataFile!.uri, new vscode.Range(0, 0, cdataFile!.lineCount, 0), modifiedCdataContent);
-            await vscode.workspace.applyEdit(edit);
+            if (cdataFile) {
+              const edit = new vscode.WorkspaceEdit();
+              edit.replace(cdataFile.uri, new vscode.Range(0, 0, cdataFile.lineCount, 0), modifiedCdataContent);
+              await vscode.workspace.applyEdit(edit);
+            }
           }
         }
       );
@@ -66,13 +69,13 @@ export function activate(context: vscode.ExtensionContext) {
 
   // Register an event handler for when a text document is closed.
   let closeDisposable = vscode.workspace.onDidCloseTextDocument((document: vscode.TextDocument) => {
-    if (document === cdataFile) {
+    if (cdataFile && document === cdataFile) {
       if (cdataEditor) {
         cdataEditor.hide();
         cdataEditor = undefined;
       }
       cdataFile = undefined;
-    } else if (document === xmlFile) {
+    } else if (xmlFile && document === xmlFile) {
       if (cdataEditor) {
         cdataEditor.hide();
         cdataEditor = undefined;

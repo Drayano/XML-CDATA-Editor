@@ -3,13 +3,11 @@ import * as vscode from "vscode";
 let xmlFile: vscode.TextDocument | undefined;
 
 // TODO : Make that a setting
-let programmingLanguage: string = "javascript";
+const programmingLanguage: string = "javascript";
 
 export function activate(context: vscode.ExtensionContext): void {
-	let xmlEditor: vscode.TextEditor | undefined;
-
 	// Register an event handler for when an XML file is opened.
-	let disposable: vscode.Disposable = vscode.workspace.onDidOpenTextDocument((document: vscode.TextDocument) => {
+	const disposable: vscode.Disposable = vscode.workspace.onDidOpenTextDocument((document: vscode.TextDocument) => {
 		// Check if the opened file has an XML language ID.
 		if (document.languageId === "xml") {
 			// Prompt the user to open associated CDATA tags.
@@ -24,7 +22,6 @@ export function activate(context: vscode.ExtensionContext): void {
 					// Get the text content of the XML file.
 					const xmlContent: string = document.getText();
 					xmlFile = document;
-					xmlEditor = vscode.window.activeTextEditor;
 
 					// Extract the content inside CDATA tags.
 					const cdataContent: string[] = extractCDataContent(xmlContent);
@@ -43,7 +40,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
 // Function to open the matched CDATA content in a new file
 function openInNewWindow(code: string, programmingLanguage: string, index: number): void {
-	let cdataFiles: vscode.TextDocument[] = [];
+	const cdataFiles: vscode.TextDocument[] = [];
 	const languageId: string = programmingLanguage;
 
 	vscode.workspace
@@ -67,48 +64,43 @@ function openInNewWindow(code: string, programmingLanguage: string, index: numbe
 			// Move the XML file to the last group with a small delay
 			setTimeout(() => {
 				moveXmlFileToLastGroup();
-			}, 100);
+			}, 500);
 
 			// Declare a variable to hold the timeout ID
 			let syncTimeout: NodeJS.Timeout | undefined;
 
 			// Register an event handler for text changes in the CDATA editor.
-			const disposable: vscode.Disposable = vscode.workspace.onDidChangeTextDocument(
-				async (event: vscode.TextDocumentChangeEvent) => {
-					// Find the index of the current CDATA document in the cdataFiles array
-					const currentIndex: number = cdataFiles.findIndex((file) => file === event.document);
-					if (currentIndex !== -1) {
-						// Retrieve the modified CDATA content.
-						const modifiedCdataContent: string = event.document.getText();
+			// const disposable: vscode.Disposable = vscode.workspace.onDidChangeTextDocument(
+			vscode.workspace.onDidChangeTextDocument(async (event: vscode.TextDocumentChangeEvent) => {
+				// Find the index of the current CDATA document in the cdataFiles array
+				const currentIndex: number = cdataFiles.findIndex((file) => file === event.document);
+				if (currentIndex !== -1) {
+					// Retrieve the modified CDATA content.
+					const modifiedCdataContent: string = event.document.getText();
 
-						// Clear any previous timeouts to avoid multiple syncs
-						if (syncTimeout) {
-							clearTimeout(syncTimeout);
-						}
-
-						// Create a new timeout to delay the sync
-						syncTimeout = setTimeout(async () => {
-							// Update the XML document with the modified CDATA content.
-							if (xmlFile) {
-								const updatedXmlContent: string = getUpdatedXMLContent(
-									xmlFile.getText(),
-									modifiedCdataContent,
-									currentIndex
-								);
-
-								// Apply the changes to the XML file.
-								const edit: vscode.WorkspaceEdit = new vscode.WorkspaceEdit();
-								edit.replace(
-									xmlFile.uri,
-									new vscode.Range(0, 0, xmlFile.lineCount, 0),
-									updatedXmlContent
-								);
-								await vscode.workspace.applyEdit(edit);
-							}
-						}, 1500); // Delay in milliseconds
+					// Clear any previous timeouts to avoid multiple syncs
+					if (syncTimeout) {
+						clearTimeout(syncTimeout);
 					}
+
+					// Create a new timeout to delay the sync
+					syncTimeout = setTimeout(async () => {
+						// Update the XML document with the modified CDATA content.
+						if (xmlFile) {
+							const updatedXmlContent: string = getUpdatedXMLContent(
+								xmlFile.getText(),
+								modifiedCdataContent,
+								currentIndex
+							);
+
+							// Apply the changes to the XML file.
+							const edit: vscode.WorkspaceEdit = new vscode.WorkspaceEdit();
+							edit.replace(xmlFile.uri, new vscode.Range(0, 0, xmlFile.lineCount, 0), updatedXmlContent);
+							await vscode.workspace.applyEdit(edit);
+						}
+					}, 1500); // Delay in milliseconds
 				}
-			);
+			});
 		});
 }
 
@@ -176,7 +168,7 @@ function moveXmlFileToLastGroup(): void {
 		// Hide the old XML view after opening the new one
 		setTimeout(() => {
 			xmlEditor.hide();
-		}, 100);
+		}, 500);
 	}
 }
 

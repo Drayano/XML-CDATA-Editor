@@ -45,7 +45,7 @@ function openInNewWindow(code: string, programmingLanguage: string, index: numbe
         content: code,
     }).then((document) => {
         vscode.window.showTextDocument(document, {
-            preserveFocus: true,
+            preserveFocus: false,
             viewColumn: vscode.ViewColumn.Beside,
         });
 
@@ -54,6 +54,12 @@ function openInNewWindow(code: string, programmingLanguage: string, index: numbe
 
         // Save the document to the cdataFiles array
         cdataFiles[index] = document;
+
+        // TODO : Add a condition here to have this feature as a setting
+        // Move the XML file to the last group with a small delay
+        setTimeout(() => {
+            moveXmlFileToLastGroup();
+        }, 100);
 
         // Declare a variable to hold the timeout ID
         let syncTimeout: NodeJS.Timeout | undefined;
@@ -83,7 +89,7 @@ function openInNewWindow(code: string, programmingLanguage: string, index: numbe
                             edit.replace(xmlFile.uri, new vscode.Range(0, 0, xmlFile.lineCount, 0), updatedXmlContent);
                             await vscode.workspace.applyEdit(edit);
                         }
-                    }, 2000); // Delay of 2000 milliseconds
+                    }, 1500); // Delay in milliseconds
                 }
             }
         );
@@ -123,6 +129,36 @@ function getUpdatedXMLContent(xmlContent: string, cdataContent: string, index: n
     }
 
     return updatedXmlContent;
+}
+
+// Function to move the XML file to the last group
+function moveXmlFileToLastGroup() {
+    const xmlEditor = vscode.window.visibleTextEditors.find(
+        (editor) => editor.document.languageId === 'xml'
+    );
+
+    if (!xmlEditor) {
+        return;
+    }
+
+    const groupCount = vscode.window.visibleTextEditors.reduce(
+        (maxGroup, editor) => Math.max(maxGroup, editor.viewColumn || 0),
+        0
+    );
+
+    const xmlColumn = xmlEditor.viewColumn;
+
+    if (xmlColumn && xmlColumn !== groupCount) {
+        vscode.window.showTextDocument(xmlEditor.document, {
+            preserveFocus: true,
+            viewColumn: vscode.ViewColumn.Beside,
+        });
+
+        // Hide the old XML view after opening the new one
+        setTimeout(() => {
+            xmlEditor.hide();
+        }, 100);
+    }
 }
 
 // This method is called when the extension is deactivated.

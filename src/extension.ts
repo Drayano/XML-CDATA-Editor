@@ -55,6 +55,9 @@ function openInNewWindow(code: string, programmingLanguage: string, index: numbe
         // Save the document to the cdataFiles array
         cdataFiles[index] = document;
 
+        // Declare a variable to hold the timeout ID
+        let syncTimeout: NodeJS.Timeout | undefined;
+
         // Register an event handler for text changes in the CDATA editor.
         const disposable = vscode.workspace.onDidChangeTextDocument(
             async (event: vscode.TextDocumentChangeEvent) => {
@@ -64,15 +67,23 @@ function openInNewWindow(code: string, programmingLanguage: string, index: numbe
                     // Retrieve the modified CDATA content.
                     const modifiedCdataContent = event.document.getText();
 
-                    // Update the XML document with the modified CDATA content.
-                    if (xmlFile) {
-                        const updatedXmlContent = getUpdatedXMLContent(xmlFile.getText(), modifiedCdataContent, currentIndex);
-
-                        // Apply the changes to the XML file.
-                        const edit = new vscode.WorkspaceEdit();
-                        edit.replace(xmlFile.uri, new vscode.Range(0, 0, xmlFile.lineCount, 0), updatedXmlContent);
-                        await vscode.workspace.applyEdit(edit);
+                    // Clear any previous timeouts to avoid multiple syncs
+                    if (syncTimeout) {
+                        clearTimeout(syncTimeout);
                     }
+
+                    // Create a new timeout to delay the sync
+                    syncTimeout = setTimeout(async () => {
+                        // Update the XML document with the modified CDATA content.
+                        if (xmlFile) {
+                            const updatedXmlContent = getUpdatedXMLContent(xmlFile.getText(), modifiedCdataContent, currentIndex);
+
+                            // Apply the changes to the XML file.
+                            const edit = new vscode.WorkspaceEdit();
+                            edit.replace(xmlFile.uri, new vscode.Range(0, 0, xmlFile.lineCount, 0), updatedXmlContent);
+                            await vscode.workspace.applyEdit(edit);
+                        }
+                    }, 2000); // Delay of 2000 milliseconds
                 }
             }
         );

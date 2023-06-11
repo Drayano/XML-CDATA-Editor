@@ -2,7 +2,11 @@
 	"name": "xml-cdata-editor",
 	"displayName": "XML CDATA Editor",
 	"description": "Simple Extension to edit code written inside CDATA tags in an XML file (WIP support for JavaScript)",
-	"version": "0.3.0",
+	"version": "0.4.0",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/Drayano/XML-CDATA-Editor.git"
+	},
 	"engines": {
 		"vscode": "^1.79.0"
 	},

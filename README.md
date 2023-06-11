@@ -46,4 +46,4 @@ The extension has a few settings that you can edit inside Visual Studio Code (si
 
 # License
 
-I haven't decided on a license yet, I'll probably go with something like MIT or GPLv3, leaving this here so I don't forget about it.
+This code is licensed under the GPLv3 license, for more information check the License.md file.

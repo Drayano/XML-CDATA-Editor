@@ -13,44 +13,38 @@ export function activate(context: vscode.ExtensionContext): void {
 	let updateDelay = parseInt(
 		vscode.workspace.getConfiguration()?.get<string>("xmlCdataConfig.updateDelay") ?? "1500"
 	);
-	let openDelay = parseInt(vscode.workspace.getConfiguration()?.get<string>("xmlCdataConfig.updateDelay") ?? "500");
+	let openDelay = parseInt(vscode.workspace.getConfiguration()?.get<string>("xmlCdataConfig.updateDelay") ?? "200");
 
 	vscode.workspace.onDidChangeConfiguration((event: vscode.ConfigurationChangeEvent) => {
+		// Check if each setting has been changed and update it if needed
 		if (event.affectsConfiguration("xmlCdataConfig.programmingLanguage")) {
-			// The programming language setting has changed
 			programmingLanguage =
 				vscode.workspace.getConfiguration()?.get<string>("xmlCdataConfig.programmingLanguage") ?? "javascript";
 		}
 
 		if (event.affectsConfiguration("xmlCdataConfig.programmingLanguageExtension")) {
-			// The programming language extension setting has changed
 			programmingLanguageExtension =
 				vscode.workspace.getConfiguration()?.get<string>("xmlCdataConfig.programmingLanguageExtension") ?? "js";
 		}
 
 		if (event.affectsConfiguration("xmlCdataConfig.cdataPosition")) {
-			// The CDATA position setting has changed
 			cdataPosition = vscode.workspace.getConfiguration()?.get<string>("xmlCdataConfig.cdataPosition") ?? "left";
 		}
 
 		if (event.affectsConfiguration("xmlCdataConfig.updateDelay")) {
-			// The update delay setting has changed
 			updateDelay = parseInt(
 				vscode.workspace.getConfiguration()?.get<string>("xmlCdataConfig.updateDelay") ?? "1500"
 			);
 		}
 
 		if (event.affectsConfiguration("xmlCdataConfig.openDelay")) {
-			// The open delay setting has changed
-			openDelay = parseInt(vscode.workspace.getConfiguration()?.get<string>("xmlCdataConfig.openDelay") ?? "500");
+			openDelay = parseInt(vscode.workspace.getConfiguration()?.get<string>("xmlCdataConfig.openDelay") ?? "200");
 		}
 	});
 
 	// Register an event handler for when an XML file is opened.
 	const disposable: vscode.Disposable = vscode.workspace.onDidOpenTextDocument((document: vscode.TextDocument) => {
-		// Check if the opened file has an XML language ID.
 		if (document.languageId === "xml") {
-			// Prompt the user to open associated CDATA tags.
 			const openCDATAPrompt: Thenable<"Yes" | "No" | undefined> = vscode.window.showInformationMessage(
 				"Open associated CDATA tags?",
 				"Yes",
@@ -78,7 +72,6 @@ export function activate(context: vscode.ExtensionContext): void {
 					});
 
 					if (cdataPosition.toLowerCase() === "left") {
-						// Move the XML file to the last group with a small delay
 						setTimeout(() => {
 							moveXmlFileToLastGroup(cdataContent.length, openDelay);
 						}, openDelay);
@@ -91,7 +84,17 @@ export function activate(context: vscode.ExtensionContext): void {
 	context.subscriptions.push(disposable);
 }
 
-// Function to create and open the matched CDATA content in a new file
+/**
+ * Create and open XML CDATA tag content into their own files
+ *
+ *
+ * @param code - The content that will be copied inside the file
+ * @param programmingLanguage - The programming language that the file will be treated as
+ * @param programmingLanguageExtension - The extension of the file
+ * @param index - The index of the CDATA tag inside the XML file (0 for the first CDATA tag, 1 for the second etc...)
+ * @param updateDelay - The delay (in milliseconds) between each sync operation
+ *
+ */
 function createAndOpenCDATAFile(
 	code: string,
 	programmingLanguage: string,
@@ -125,8 +128,13 @@ function createAndOpenCDATAFile(
 
 			// Register an event handler for text changes in the CDATA editor.
 			vscode.workspace.onDidChangeTextDocument(async (event: vscode.TextDocumentChangeEvent) => {
+				// Check if the modified file is a CDATA file
+				const fileNameRegex = /cdata_file_\d+\.[^.]+$/;
+				if (!fileNameRegex.test(event.document.fileName)) {
+					return; // Skip processing for non-CDATA files
+				}
+
 				if (event.document.uri.toString() === document.uri.toString()) {
-					// Retrieve the modified CDATA content.
 					const modifiedCdataContent: string = event.document.getText();
 
 					// Clear any previous timeouts to avoid multiple syncs
@@ -136,7 +144,6 @@ function createAndOpenCDATAFile(
 
 					// Create a new timeout to delay the sync
 					syncTimeout = setTimeout(async () => {
-						// Update the XML document with the modified CDATA content.
 						if (xmlFile) {
 							const updatedXmlContent: string = getUpdatedXMLContent(
 								xmlFile.getText(),
@@ -149,14 +156,21 @@ function createAndOpenCDATAFile(
 							edit.replace(xmlFile.uri, new vscode.Range(0, 0, xmlFile.lineCount, 0), updatedXmlContent);
 							await vscode.workspace.applyEdit(edit);
 						}
-					}, updateDelay); // Delay in milliseconds. // TODO: Make that a setting
+					}, updateDelay);
 				}
 			});
 		});
 	});
 }
 
-// Function to extract content inside CDATA tags using regex.
+/**
+ * Extract XML CDATA tag contents given an XML file content as a string
+ *
+ *
+ * @param xmlContent - The XML file content as a string
+ * @returns An array containing each CDATA tag contents
+ *
+ */
 function extractCDataContent(xmlContent: string): string[] {
 	const regex: RegExp = /<!\[CDATA\[(.*?)]]>/gs;
 	const matches: RegExpMatchArray | null = xmlContent.match(regex);
@@ -170,7 +184,16 @@ function extractCDataContent(xmlContent: string): string[] {
 	return [];
 }
 
-// Function to get the new XML document content with modified CDATA content.
+/**
+ * Extract XML CDATA tag contents given an XML file content as a string
+ *
+ *
+ * @param xmlContent - The XML file content as a string
+ * @param cdataContent - The CDATA content that has changed
+ * @param index - The index of the CDATA tag inside the XML file (0 for the first CDATA tag, 1 for the second etc...)
+ * @returns A string containing the XML file with the updated CDATA tag
+ *
+ */
 function getUpdatedXMLContent(xmlContent: string, cdataContent: string, index: number): string {
 	const regex = /<!\[CDATA\[(.*?)]]>/gs;
 	let match: RegExpExecArray | null;
@@ -194,7 +217,14 @@ function getUpdatedXMLContent(xmlContent: string, cdataContent: string, index: n
 	return updatedXmlContent;
 }
 
-// Function to move the XML file to the right side of the editor
+/**
+ * Extract XML CDATA tag contents given an XML file content as a string
+ *
+ *
+ * @param index - The index of the CDATA tag (the function will then calculate where to open the CDATA tag in a side-by-side view)
+ * @param openDelay - The delay (in milliseconds) before moving the XML file to the last group
+ *
+ */
 function moveXmlFileToLastGroup(index: number, openDelay: number): void {
 	const xmlEditor: vscode.TextEditor | undefined = vscode.window.visibleTextEditors.find(
 		(editor: vscode.TextEditor) => editor.document.languageId === "xml"

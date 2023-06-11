@@ -7,11 +7,12 @@
 		"sourceType": "module",
 		"project": ["./tsconfig.json"]
 	},
-	"plugins": ["@typescript-eslint"],
+	"plugins": ["@typescript-eslint", "eslint-plugin-tsdoc"],
 	"rules": {
 		"@typescript-eslint/naming-convention": "warn",
 		"@typescript-eslint/semi": "error",
 		"@typescript-eslint/no-inferrable-types": "off",
+		"tsdoc/syntax": "warn",
 		"array-callback-return": "warn",
 		"no-await-in-loop": "warn",
 		"curly": ["error", "all"],

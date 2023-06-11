@@ -40,7 +40,7 @@
 				},
 				"xmlCdataConfig.openDelay": {
 					"type": "integer",
-					"default": 500,
+					"default": 200,
 					"description": "Time to wait before opening the CDATA files (in milliseconds). Keep in mind that a low enough value might cause issues if there's multiple/big CDATA tags and you have linters that will take time to check each file."
 				}
 			}
@@ -64,6 +64,7 @@
 		"@vscode/test-electron": "^2.3.2",
 		"eslint": "^8.42.0",
 		"eslint-config-prettier": "^8.8.0",
+		"eslint-plugin-tsdoc": "^0.2.17",
 		"glob": "^8.1.0",
 		"mocha": "^10.2.0",
 		"typescript": "^5.1.3"

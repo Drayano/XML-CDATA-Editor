@@ -48,8 +48,9 @@ export function activate(context: vscode.ExtensionContext): void {
 
 // Function to create and open the matched CDATA content in a new file
 function createAndOpenCDATAFile(code: string, programmingLanguage: string, index: number): void {
-	const fileName = `cdata_file_${index}.js`;
-	const filePath = path.join(vscode.workspace.rootPath || "", fileName);
+	const fileName: string = `cdata_file_${index}.js`;
+	const currentWorkspaceFolder: string | undefined = vscode.workspace.workspaceFolders?.at(0)?.uri.fsPath;
+	const filePath = path.join(currentWorkspaceFolder || "", fileName);
 
 	fs.writeFile(filePath, code, (error) => {
 		if (error) {

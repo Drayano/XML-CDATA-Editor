@@ -77,10 +77,17 @@ export function activate(context: vscode.ExtensionContext): void {
 		// Create a new timeout to delay the sync
 		syncTimeout = setTimeout(async () => {
 			if (xmlFileUri && xmlFile) {
-				const index = parseInt(
-					path.basename(event.document.fileName).match(/cdata_file_(\d+)\.[^.]+$/)![1],
-					10
-				);
+				// Get the index from the file name (cdata_file_[index]) using regex, falling back to 0 if no match found
+				const match = path.basename(event.document.fileName).match(/cdata_file_(\d+)\.[^.]+$/);
+
+				let fileIndex: string;
+				if (match) {
+					fileIndex = match[1];
+				} else {
+					fileIndex = "0";
+				}
+
+				const index = parseInt(fileIndex, 10);
 				const modifiedCdataContent: string = event.document.getText();
 				const updatedXmlContent: string = xmlUtilities.getUpdatedXMLContent(
 					xmlFile.getText(),

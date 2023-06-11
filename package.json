@@ -40,7 +40,7 @@
 				},
 				"xmlCdataConfig.openDelay": {
 					"type": "integer",
-					"default": 200,
+					"default": 2500,
 					"description": "Time to wait before opening the CDATA files (in milliseconds). Keep in mind that a low enough value might cause issues if there's multiple/big CDATA tags and you have linters that will take time to check each file."
 				}
 			}

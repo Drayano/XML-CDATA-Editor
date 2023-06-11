@@ -36,7 +36,7 @@ export function activate(context: vscode.ExtensionContext): void {
 					// TODO : Add a condition here to have this feature as a setting
 					// Move the XML file to the last group with a small delay
 					setTimeout(() => {
-						moveXmlFileToLastGroup();
+						moveXmlFileToLastGroup(cdataContent.length);
 					}, 500);
 				}
 			});
@@ -59,9 +59,13 @@ function createAndOpenCDATAFile(code: string, programmingLanguage: string, index
 		}
 
 		vscode.workspace.openTextDocument(filePath).then((document: vscode.TextDocument) => {
+			// +2 because the index starts at 0 and the first element will always
+			// have to spawn in column 2 because the XML file is in column 1
+			const columnIndex: vscode.ViewColumn = index + 2;
+
 			vscode.window.showTextDocument(document, {
-				preserveFocus: false,
-				viewColumn: vscode.ViewColumn.Beside,
+				preserveFocus: true,
+				viewColumn: columnIndex,
 			});
 
 			vscode.languages.setTextDocumentLanguage(document, programmingLanguage);
@@ -140,7 +144,7 @@ function getUpdatedXMLContent(xmlContent: string, cdataContent: string, index: n
 }
 
 // Function to move the XML file to the right side of the editor
-function moveXmlFileToLastGroup(): void {
+function moveXmlFileToLastGroup(index: number): void {
 	const xmlEditor: vscode.TextEditor | undefined = vscode.window.visibleTextEditors.find(
 		(editor: vscode.TextEditor) => editor.document.languageId === "xml"
 	);
@@ -157,14 +161,18 @@ function moveXmlFileToLastGroup(): void {
 	const xmlColumn: vscode.ViewColumn | undefined = xmlEditor.viewColumn;
 
 	if (xmlColumn && xmlColumn !== groupCount) {
+		// +2 because the index starts at 0 and the first element will always
+		// have to spawn in column 2 because the XML file is in column 1
+		const columnIndex: vscode.ViewColumn = index + 2;
+
 		vscode.window.showTextDocument(xmlEditor.document, {
 			preserveFocus: true,
-			viewColumn: vscode.ViewColumn.Beside,
+			viewColumn: columnIndex,
 		});
 
-		// Hide the old XML view after opening the new one
+		// Close the old XML view after opening the new one
 		setTimeout(() => {
-			xmlEditor.hide();
+			vscode.commands.executeCommand("workbench.action.closeActiveEditor");
 		}, 500);
 	}
 }

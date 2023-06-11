@@ -2,7 +2,7 @@
 	"name": "xml-cdata-editor",
 	"displayName": "XML CDATA Editor",
 	"description": "Simple Extension to edit code written inside CDATA tags in an XML file (WIP support for JavaScript)",
-	"version": "0.2.0",
+	"version": "0.3.0",
 	"engines": {
 		"vscode": "^1.79.0"
 	},
@@ -14,7 +14,37 @@
 	],
 	"main": "./out/extension.js",
 	"contributes": {
-		"commands": []
+		"commands": [],
+		"configuration": {
+			"title": "XML CDATA Editor",
+			"properties": {
+				"xmlCdataConfig.programmingLanguage": {
+					"type": "string",
+					"default": "javascript",
+					"description": "The programming language to use for the extension."
+				},
+				"xmlCdataConfig.programmingLanguageExtension": {
+					"type": "string",
+					"default": "js",
+					"description": "The file extension to use for the created files."
+				},
+				"xmlCdataConfig.cdataPosition": {
+					"type": "string",
+					"default": "left",
+					"description": "Where do you want the CDATA files to open relative to the XML file ? (Left or Right)"
+				},
+				"xmlCdataConfig.updateDelay": {
+					"type": "integer",
+					"default": 1500,
+					"description": "Time to wait before syncing the changes of the CDATA files back to the XML file (in milliseconds). Keep in mind that a low enough value will trigger repetitive flashing for each keystroke. (You'll probably have to re-open the XML and CDATA files for this change to take effect)"
+				},
+				"xmlCdataConfig.openDelay": {
+					"type": "integer",
+					"default": 500,
+					"description": "Time to wait before opening the CDATA files (in milliseconds). Keep in mind that a low enough value might cause issues if there's multiple/big CDATA tags and you have linters that will take time to check each file."
+				}
+			}
+		}
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run compile",

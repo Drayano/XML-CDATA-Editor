@@ -4,10 +4,48 @@ import * as fs from "fs";
 
 let xmlFile: vscode.TextDocument | undefined;
 
-// TODO : Make that a setting
-const programmingLanguage: string = "javascript";
-
 export function activate(context: vscode.ExtensionContext): void {
+	let programmingLanguage =
+		vscode.workspace.getConfiguration()?.get<string>("xmlCdataConfig.programmingLanguage") ?? "javascript";
+	let programmingLanguageExtension =
+		vscode.workspace.getConfiguration()?.get<string>("xmlCdataConfig.programmingLanguageExtension") ?? "js";
+	let cdataPosition = vscode.workspace.getConfiguration()?.get<string>("xmlCdataConfig.cdataPosition") ?? "left";
+	let updateDelay = parseInt(
+		vscode.workspace.getConfiguration()?.get<string>("xmlCdataConfig.updateDelay") ?? "1500"
+	);
+	let openDelay = parseInt(vscode.workspace.getConfiguration()?.get<string>("xmlCdataConfig.updateDelay") ?? "500");
+
+	vscode.workspace.onDidChangeConfiguration((event: vscode.ConfigurationChangeEvent) => {
+		if (event.affectsConfiguration("xmlCdataConfig.programmingLanguage")) {
+			// The programming language setting has changed
+			programmingLanguage =
+				vscode.workspace.getConfiguration()?.get<string>("xmlCdataConfig.programmingLanguage") ?? "javascript";
+		}
+
+		if (event.affectsConfiguration("xmlCdataConfig.programmingLanguageExtension")) {
+			// The programming language extension setting has changed
+			programmingLanguageExtension =
+				vscode.workspace.getConfiguration()?.get<string>("xmlCdataConfig.programmingLanguageExtension") ?? "js";
+		}
+
+		if (event.affectsConfiguration("xmlCdataConfig.cdataPosition")) {
+			// The CDATA position setting has changed
+			cdataPosition = vscode.workspace.getConfiguration()?.get<string>("xmlCdataConfig.cdataPosition") ?? "left";
+		}
+
+		if (event.affectsConfiguration("xmlCdataConfig.updateDelay")) {
+			// The update delay setting has changed
+			updateDelay = parseInt(
+				vscode.workspace.getConfiguration()?.get<string>("xmlCdataConfig.updateDelay") ?? "1500"
+			);
+		}
+
+		if (event.affectsConfiguration("xmlCdataConfig.openDelay")) {
+			// The open delay setting has changed
+			openDelay = parseInt(vscode.workspace.getConfiguration()?.get<string>("xmlCdataConfig.openDelay") ?? "500");
+		}
+	});
+
 	// Register an event handler for when an XML file is opened.
 	const disposable: vscode.Disposable = vscode.workspace.onDidOpenTextDocument((document: vscode.TextDocument) => {
 		// Check if the opened file has an XML language ID.
@@ -30,14 +68,21 @@ export function activate(context: vscode.ExtensionContext): void {
 
 					// Create and open each CDATA content in a new file.
 					cdataContent.forEach((content: string, index: number) => {
-						createAndOpenCDATAFile(content, programmingLanguage, index);
+						createAndOpenCDATAFile(
+							content,
+							programmingLanguage,
+							programmingLanguageExtension,
+							index,
+							updateDelay
+						);
 					});
 
-					// TODO : Add a condition here to have this feature as a setting
-					// Move the XML file to the last group with a small delay
-					setTimeout(() => {
-						moveXmlFileToLastGroup(cdataContent.length);
-					}, 500);
+					if (cdataPosition.toLowerCase() === "left") {
+						// Move the XML file to the last group with a small delay
+						setTimeout(() => {
+							moveXmlFileToLastGroup(cdataContent.length, openDelay);
+						}, openDelay);
+					}
 				}
 			});
 		}
@@ -47,8 +92,14 @@ export function activate(context: vscode.ExtensionContext): void {
 }
 
 // Function to create and open the matched CDATA content in a new file
-function createAndOpenCDATAFile(code: string, programmingLanguage: string, index: number): void {
-	const fileName: string = `cdata_file_${index}.js`;
+function createAndOpenCDATAFile(
+	code: string,
+	programmingLanguage: string,
+	programmingLanguageExtension: string,
+	index: number,
+	updateDelay: number
+): void {
+	const fileName: string = `cdata_file_${index}.${programmingLanguageExtension}`;
 	const currentWorkspaceFolder: string | undefined = vscode.workspace.workspaceFolders?.at(0)?.uri.fsPath;
 	const filePath = path.join(currentWorkspaceFolder || "", fileName);
 
@@ -98,7 +149,7 @@ function createAndOpenCDATAFile(code: string, programmingLanguage: string, index
 							edit.replace(xmlFile.uri, new vscode.Range(0, 0, xmlFile.lineCount, 0), updatedXmlContent);
 							await vscode.workspace.applyEdit(edit);
 						}
-					}, 1500); // Delay in milliseconds. // TODO: Make that a setting
+					}, updateDelay); // Delay in milliseconds. // TODO: Make that a setting
 				}
 			});
 		});
@@ -144,7 +195,7 @@ function getUpdatedXMLContent(xmlContent: string, cdataContent: string, index: n
 }
 
 // Function to move the XML file to the right side of the editor
-function moveXmlFileToLastGroup(index: number): void {
+function moveXmlFileToLastGroup(index: number, openDelay: number): void {
 	const xmlEditor: vscode.TextEditor | undefined = vscode.window.visibleTextEditors.find(
 		(editor: vscode.TextEditor) => editor.document.languageId === "xml"
 	);
@@ -170,10 +221,11 @@ function moveXmlFileToLastGroup(index: number): void {
 			viewColumn: columnIndex,
 		});
 
-		// Close the old XML view after opening the new one
+		// Close the old XML view after opening the new one, the delay will have to be the same (or higher)
+		// as the delay to open the CDATA files so as to not cause any issues
 		setTimeout(() => {
 			vscode.commands.executeCommand("workbench.action.closeActiveEditor");
-		}, 500);
+		}, openDelay);
 	}
 }
 

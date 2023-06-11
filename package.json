@@ -21,12 +21,12 @@
 				"xmlCdataConfig.programmingLanguage": {
 					"type": "string",
 					"default": "javascript",
-					"description": "The programming language to use for the extension."
+					"description": "The programming language to use for the extension. This is the language that newly opened file will be set as."
 				},
 				"xmlCdataConfig.programmingLanguageExtension": {
 					"type": "string",
 					"default": "js",
-					"description": "The file extension to use for the created files."
+					"description": "The file extension to use for the newly opened files."
 				},
 				"xmlCdataConfig.cdataPosition": {
 					"type": "string",
@@ -36,12 +36,12 @@
 				"xmlCdataConfig.updateDelay": {
 					"type": "integer",
 					"default": 1500,
-					"description": "Time to wait before syncing the changes of the CDATA files back to the XML file (in milliseconds). Keep in mind that a low enough value will trigger repetitive flashing for each keystroke. (You'll probably have to re-open the XML and CDATA files for this change to take effect)"
+					"description": "Delay before syncing the changes of the CDATA files back to the XML file (in milliseconds). Keep in mind that a low enough value will trigger repetitive flashing for each keystroke. (You'll probably have to re-open the XML and CDATA files for this change to take effect)"
 				},
 				"xmlCdataConfig.openDelay": {
 					"type": "integer",
-					"default": 2500,
-					"description": "Time to wait before opening the CDATA files (in milliseconds). Keep in mind that a low enough value might cause issues if there's multiple/big CDATA tags and you have linters that will take time to check each file."
+					"default": 500,
+					"description": "Delay before opening the CDATA files (in milliseconds). Keep in mind that a low enough value might cause issues if there's multiple/big CDATA tags and you have linters that will take time to check each file."
 				}
 			}
 		}

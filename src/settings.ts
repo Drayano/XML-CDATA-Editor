@@ -9,9 +9,7 @@ export function getSettings() {
 	const updateDelay = parseInt(
 		vscode.workspace.getConfiguration()?.get<string>("xmlCdataConfig.updateDelay") ?? "1500"
 	);
-	const openDelay = parseInt(
-		vscode.workspace.getConfiguration()?.get<string>("xmlCdataConfig.updateDelay") ?? "2500"
-	);
+	const openDelay = parseInt(vscode.workspace.getConfiguration()?.get<string>("xmlCdataConfig.updateDelay") ?? "500");
 
 	return { programmingLanguage, programmingLanguageExtension, cdataPosition, updateDelay, openDelay };
 }

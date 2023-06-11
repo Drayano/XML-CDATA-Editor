@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import * as path from "path";
+
 import * as xmlUtilities from "./xmlUtilities";
 import { getSettings } from "./settings";
 

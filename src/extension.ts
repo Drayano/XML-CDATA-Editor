@@ -1,4 +1,6 @@
 import * as vscode from "vscode";
+import * as path from "path";
+import * as fs from "fs";
 
 let xmlFile: vscode.TextDocument | undefined;
 
@@ -26,10 +28,16 @@ export function activate(context: vscode.ExtensionContext): void {
 					// Extract the content inside CDATA tags.
 					const cdataContent: string[] = extractCDataContent(xmlContent);
 
-					// Open each CDATA content in a new file.
+					// Create and open each CDATA content in a new file.
 					cdataContent.forEach((content: string, index: number) => {
-						openInNewWindow(content, programmingLanguage, index);
+						createAndOpenCDATAFile(content, programmingLanguage, index);
 					});
+
+					// TODO : Add a condition here to have this feature as a setting
+					// Move the XML file to the last group with a small delay
+					setTimeout(() => {
+						moveXmlFileToLastGroup();
+					}, 500);
 				}
 			});
 		}
@@ -38,43 +46,30 @@ export function activate(context: vscode.ExtensionContext): void {
 	context.subscriptions.push(disposable);
 }
 
-// Function to open the matched CDATA content in a new file
-function openInNewWindow(code: string, programmingLanguage: string, index: number): void {
-	const cdataFiles: vscode.TextDocument[] = [];
-	const languageId: string = programmingLanguage;
+// Function to create and open the matched CDATA content in a new file
+function createAndOpenCDATAFile(code: string, programmingLanguage: string, index: number): void {
+	const fileName = `cdata_file_${index}.js`;
+	const filePath = path.join(vscode.workspace.rootPath || "", fileName);
 
-	vscode.workspace
-		.openTextDocument({
-			language: languageId,
-			content: code,
-		})
-		.then((document: vscode.TextDocument) => {
+	fs.writeFile(filePath, code, (error) => {
+		if (error) {
+			vscode.window.showErrorMessage(`Failed to create file: ${fileName}`);
+			return;
+		}
+
+		vscode.workspace.openTextDocument(filePath).then((document: vscode.TextDocument) => {
 			vscode.window.showTextDocument(document, {
 				preserveFocus: false,
 				viewColumn: vscode.ViewColumn.Beside,
 			});
 
-			// Change the document language to the specified programming language
-			vscode.languages.setTextDocumentLanguage(document, languageId);
+			vscode.languages.setTextDocumentLanguage(document, programmingLanguage);
 
-			// Save the document to the cdataFiles array
-			cdataFiles[index] = document;
-
-			// TODO : Add a condition here to have this feature as a setting
-			// Move the XML file to the last group with a small delay
-			setTimeout(() => {
-				moveXmlFileToLastGroup();
-			}, 500);
-
-			// Declare a variable to hold the timeout ID
 			let syncTimeout: NodeJS.Timeout | undefined;
 
 			// Register an event handler for text changes in the CDATA editor.
-			// const disposable: vscode.Disposable = vscode.workspace.onDidChangeTextDocument(
 			vscode.workspace.onDidChangeTextDocument(async (event: vscode.TextDocumentChangeEvent) => {
-				// Find the index of the current CDATA document in the cdataFiles array
-				const currentIndex: number = cdataFiles.findIndex((file) => file === event.document);
-				if (currentIndex !== -1) {
+				if (event.document.uri.toString() === document.uri.toString()) {
 					// Retrieve the modified CDATA content.
 					const modifiedCdataContent: string = event.document.getText();
 
@@ -90,7 +85,7 @@ function openInNewWindow(code: string, programmingLanguage: string, index: numbe
 							const updatedXmlContent: string = getUpdatedXMLContent(
 								xmlFile.getText(),
 								modifiedCdataContent,
-								currentIndex
+								index
 							);
 
 							// Apply the changes to the XML file.
@@ -98,10 +93,11 @@ function openInNewWindow(code: string, programmingLanguage: string, index: numbe
 							edit.replace(xmlFile.uri, new vscode.Range(0, 0, xmlFile.lineCount, 0), updatedXmlContent);
 							await vscode.workspace.applyEdit(edit);
 						}
-					}, 1500); // Delay in milliseconds
+					}, 1500); // Delay in milliseconds. // TODO: Make that a setting
 				}
 			});
 		});
+	});
 }
 
 // Function to extract content inside CDATA tags using regex.
@@ -142,7 +138,7 @@ function getUpdatedXMLContent(xmlContent: string, cdataContent: string, index: n
 	return updatedXmlContent;
 }
 
-// Function to move the XML file to the last group
+// Function to move the XML file to the right side of the editor
 function moveXmlFileToLastGroup(): void {
 	const xmlEditor: vscode.TextEditor | undefined = vscode.window.visibleTextEditors.find(
 		(editor: vscode.TextEditor) => editor.document.languageId === "xml"

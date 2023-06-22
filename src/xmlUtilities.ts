@@ -18,10 +18,11 @@ export function createAndOpenCDATAFile(
 	programmingLanguage: string,
 	programmingLanguageExtension: string,
 	index: number,
-	cdataFiles: { [key: string]: vscode.TextDocument }
+	cdataFiles: { [key: string]: vscode.TextDocument },
 ): void {
 	const fileName: string = `cdata_file_${index}.${programmingLanguageExtension}`;
-	const currentWorkspaceFolder: string | undefined = vscode.workspace.workspaceFolders?.at(0)?.uri.fsPath;
+	const currentWorkspaceFolder: string | undefined =
+		vscode.workspace.workspaceFolders?.at(0)?.uri.fsPath;
 	const filePath = path.join(currentWorkspaceFolder || "", fileName);
 
 	fs.writeFile(filePath, code, (error) => {
@@ -61,7 +62,9 @@ export function extractCDataContent(xmlContent: string): string[] {
 
 	if (matches && matches.length > 0) {
 		// Remove the CDATA tags from each match.
-		const cdataContent: string[] = matches.map((match) => match.replace(/<!\[CDATA\[|\]\]>/g, ""));
+		const cdataContent: string[] = matches.map((match) =>
+			match.replace(/<!\[CDATA\[|\]\]>/g, ""),
+		);
 		return cdataContent;
 	}
 
@@ -78,7 +81,11 @@ export function extractCDataContent(xmlContent: string): string[] {
  * @returns A string containing the XML file with the updated CDATA tag
  *
  */
-export function getUpdatedXMLContent(xmlContent: string, cdataContent: string, index: number): string {
+export function getUpdatedXMLContent(
+	xmlContent: string,
+	cdataContent: string,
+	index: number,
+): string {
 	const regex = /<!\[CDATA\[(.*?)]]>/gs;
 	let match: RegExpExecArray | null;
 	let count: number = 0;
@@ -111,7 +118,7 @@ export function getUpdatedXMLContent(xmlContent: string, cdataContent: string, i
  */
 export function moveXmlFileToLastGroup(index: number, openDelay: number): void {
 	const xmlEditor: vscode.TextEditor | undefined = vscode.window.visibleTextEditors.find(
-		(editor: vscode.TextEditor) => editor.document.languageId === "xml"
+		(editor: vscode.TextEditor) => editor.document.languageId === "xml",
 	);
 
 	if (!xmlEditor) {
@@ -120,7 +127,7 @@ export function moveXmlFileToLastGroup(index: number, openDelay: number): void {
 
 	const groupCount: number = vscode.window.visibleTextEditors.reduce(
 		(maxGroup: number, editor: vscode.TextEditor) => Math.max(maxGroup, editor.viewColumn || 0),
-		0
+		0,
 	);
 
 	const xmlColumn: vscode.ViewColumn | undefined = xmlEditor.viewColumn;

@@ -8,7 +8,7 @@
 		"url": "https://github.com/Drayano/XML-CDATA-Editor.git"
 	},
 	"engines": {
-		"vscode": "^1.79.0"
+		"vscode": "^1.79.2"
 	},
 	"categories": [
 		"Other"

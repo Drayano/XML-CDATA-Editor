@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import * as path from "path";
 import * as fs from "fs";
+import * as FastXMLParser from "fast-xml-parser";
 
 /**
  * Create and open XML CDATA tag content into their own files
@@ -57,18 +58,50 @@ export function createAndOpenCDATAFile(
  *
  */
 export function extractCDataContent(xmlContent: string): string[] {
-	const regex: RegExp = /<!\[CDATA\[(.*?)]]>/gs;
-	const matches: RegExpMatchArray | null = xmlContent.match(regex);
+	const options = {
+		ignoreAttributes: false,
+		parseAttributeValue: true,
+		parseNodeValue: true,
+		cdataPropName: "__cdata",
+	};
+	const parser = new FastXMLParser.XMLParser(options);
+	const parsedXml = parser.parse(xmlContent);
 
-	if (matches && matches.length > 0) {
-		// Remove the CDATA tags from each match.
-		const cdataContent: string[] = matches.map((match) =>
-			match.replace(/<!\[CDATA\[|\]\]>/g, ""),
-		);
-		return cdataContent;
+	const extractedContents: string[] = [];
+
+	function traverse(node: XmlNode) {
+		if (Array.isArray(node)) {
+			for (const item of node) {
+				traverse(item as XmlNode);
+			}
+		} else if (typeof node === "object") {
+			for (const key in node) {
+				if (key === "__cdata") {
+					const cdataValue = node[key];
+					if (Array.isArray(cdataValue)) {
+						for (const item of cdataValue) {
+							if (typeof item === "string") {
+								extractedContents.push(item);
+							} else {
+								traverse(item);
+							}
+						}
+					} else if (typeof cdataValue === "string") {
+						extractedContents.push(cdataValue);
+					}
+				} else {
+					traverse(node[key] as XmlNode);
+				}
+			}
+		}
 	}
 
-	return [];
+	traverse(parsedXml);
+	return extractedContents;
+}
+
+interface XmlNode {
+	[key: string]: string | XmlNode | XmlNode[];
 }
 
 /**

@@ -36,6 +36,25 @@ suite("XML Utilities Test Suite", () => {
 
 			assert.deepStrictEqual(extractedContents, []);
 		});
+
+		Mocha.it("EDGE CASE - CDATA Tags inside the content", function () {
+			const xmlContent = `
+			<root>
+			  <item><![CDATA[CDATA Content 1]]></item>
+			  <item><![CDATA[CDATA OUTSIDE CONTENT \\<![CDATA[CDATA INSIDE CONTENT]]\\> CDATA OUTSIDE CONTENT]]></item>
+			  <item><![CDATA[CDATA Content 3]]></item>
+			</root>
+		  `;
+			const expectedContents = [
+				"CDATA Content 1",
+				"CDATA OUTSIDE CONTENT \\<![CDATA[CDATA INSIDE CONTENT]]\\> CDATA OUTSIDE CONTENT",
+				"CDATA Content 3",
+			];
+
+			const extractedContents = xmlUtilities.extractCDataContent(xmlContent);
+
+			assert.deepStrictEqual(extractedContents, expectedContents);
+		});
 	});
 
 	Mocha.describe("getUpdatedXMLContent", function () {

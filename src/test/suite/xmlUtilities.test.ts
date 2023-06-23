@@ -37,24 +37,27 @@ suite("XML Utilities Test Suite", () => {
 			assert.deepStrictEqual(extractedContents, []);
 		});
 
-		Mocha.it("EDGE CASE - CDATA Tags inside the content", function () {
-			const xmlContent = `
+		Mocha.it(
+			"EDGE CASE - Should extract CDATA Tags that contains other CDATA tags inside the content",
+			function () {
+				const xmlContent = `
 			<root>
 			  <item><![CDATA[CDATA Content 1]]></item>
 			  <item><![CDATA[CDATA OUTSIDE CONTENT \\<![CDATA[CDATA INSIDE CONTENT]]\\> CDATA OUTSIDE CONTENT]]></item>
 			  <item><![CDATA[CDATA Content 3]]></item>
 			</root>
 		  `;
-			const expectedContents = [
-				"CDATA Content 1",
-				"CDATA OUTSIDE CONTENT \\<![CDATA[CDATA INSIDE CONTENT]]\\> CDATA OUTSIDE CONTENT",
-				"CDATA Content 3",
-			];
+				const expectedContents = [
+					"CDATA Content 1",
+					"CDATA OUTSIDE CONTENT \\<![CDATA[CDATA INSIDE CONTENT]]\\> CDATA OUTSIDE CONTENT",
+					"CDATA Content 3",
+				];
 
-			const extractedContents = xmlUtilities.extractCDataContent(xmlContent);
+				const extractedContents = xmlUtilities.extractCDataContent(xmlContent);
 
-			assert.deepStrictEqual(extractedContents, expectedContents);
-		});
+				assert.deepStrictEqual(extractedContents, expectedContents);
+			},
+		);
 	});
 
 	Mocha.describe("getUpdatedXMLContent", function () {
@@ -103,6 +106,68 @@ suite("XML Utilities Test Suite", () => {
 				);
 
 				assert.strictEqual(updatedXmlContent.trim(), xmlContent.trim());
+			},
+		);
+
+		Mocha.it(
+			"EDGE CASE - Should update the CDATA tag even if it has other CDATA tags inside of it",
+			function () {
+				const xmlContent = `
+            <root>
+              <item><![CDATA[Old CDATA Content 1]]></item>
+              <item><![CDATA[Old CDATA OUTSIDE CONTENT \\<![CDATA[Old CDATA INSIDE CONTENT]]\\> Old CDATA OUTSIDE CONTENT]]></item>
+              <item><![CDATA[Old CDATA Content 3]]></item>
+            </root>
+          `;
+				const cdataContent =
+					"New CDATA OUTSIDE CONTENT \\<![CDATA[New CDATA INSIDE CONTENT]]\\> New CDATA OUTSIDE CONTENT";
+				const index = 1;
+				const expectedOutput = `
+            <root>
+              <item><![CDATA[Old CDATA Content 1]]></item>
+              <item><![CDATA[New CDATA OUTSIDE CONTENT \\<![CDATA[New CDATA INSIDE CONTENT]]\\> New CDATA OUTSIDE CONTENT]]></item>
+              <item><![CDATA[Old CDATA Content 3]]></item>
+            </root>
+          `;
+
+				const updatedXmlContent = xmlUtilities.getUpdatedXMLContent(
+					xmlContent,
+					cdataContent,
+					index,
+				);
+
+				assert.strictEqual(updatedXmlContent.trim(), expectedOutput.trim());
+			},
+		);
+
+		Mocha.it(
+			"EDGE CASE - Should update the CDATA tags that are inside if they are modified",
+			function () {
+				const xmlContent = `
+            <root>
+              <item><![CDATA[Old CDATA Content 1]]></item>
+              <item><![CDATA[Old CDATA OUTSIDE CONTENT \\<![CDATA[Old CDATA INSIDE CONTENT]]\\> Old CDATA OUTSIDE CONTENT]]></item>
+              <item><![CDATA[Old CDATA Content 3]]></item>
+            </root>
+          `;
+				const cdataContent =
+					"New CDATA OUTSIDE CONTENT \\<![New CDATA INSIDE CONTENT]\\> New CDATA OUTSIDE CONTENT";
+				const index = 1;
+				const expectedOutput = `
+            <root>
+              <item><![CDATA[Old CDATA Content 1]]></item>
+              <item><![CDATA[New CDATA OUTSIDE CONTENT \\<![New CDATA INSIDE CONTENT]\\> New CDATA OUTSIDE CONTENT]]></item>
+              <item><![CDATA[Old CDATA Content 3]]></item>
+            </root>
+          `;
+
+				const updatedXmlContent = xmlUtilities.getUpdatedXMLContent(
+					xmlContent,
+					cdataContent,
+					index,
+				);
+
+				assert.strictEqual(updatedXmlContent.trim(), expectedOutput.trim());
 			},
 		);
 	});

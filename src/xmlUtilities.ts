@@ -61,8 +61,9 @@ export function extractCDataContent(xmlContent: string): string[] {
 	const options = {
 		ignoreAttributes: false,
 		parseAttributeValue: true,
-		parseNodeValue: true,
 		cdataPropName: "__cdata",
+		commentPropName: "#comment",
+		preserveOrder: true,
 	};
 	const parser = new FastXMLParser.XMLParser(options);
 	const parsedXml = parser.parse(xmlContent);
@@ -77,18 +78,8 @@ export function extractCDataContent(xmlContent: string): string[] {
 		} else if (typeof node === "object") {
 			for (const key in node) {
 				if (key === "__cdata") {
-					const cdataValue = node[key];
-					if (Array.isArray(cdataValue)) {
-						for (const item of cdataValue) {
-							if (typeof item === "string") {
-								extractedContents.push(item);
-							} else {
-								traverse(item);
-							}
-						}
-					} else if (typeof cdataValue === "string") {
-						extractedContents.push(cdataValue);
-					}
+					const cdataValue = ((node[key] as XmlNode)["0"] as XmlNode)["#text"] as string;
+					extractedContents.push(cdataValue);
 				} else {
 					traverse(node[key] as XmlNode);
 				}

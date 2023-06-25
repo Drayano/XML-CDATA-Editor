@@ -96,7 +96,7 @@ interface XmlNode {
 }
 
 /**
- * Extract XML CDATA tag contents given an XML file content as a string
+ * Update the XML file with the modified CDATA content
  *
  *
  * @param xmlContent - The XML file content as a string
@@ -133,7 +133,7 @@ export function getUpdatedXMLContent(
 }
 
 /**
- * Extract XML CDATA tag contents given an XML file content as a string
+ * Move the XML file opened in VSCode to the right of all the CDATA opened files.
  *
  *
  * @param index - The index of the CDATA tag (the function will then calculate where to open the CDATA tag in a side-by-side view)

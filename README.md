@@ -1,3 +1,7 @@
+# Not maintained anymore
+
+This extension hasn't been developed by me for some time as I have no more use for it and it was in a pretty okay state even with the current feature set for my needs. I'll archive the repository here, as no more development is planned.
+
 # XML CDATA Editor
 
 This is a simple Visual Studio Code extension written in TypeScript that allows you to easily edit code written inside CDATA tags in an XML file, it does that by simply copying the content of the CDATA tags inside the opened XML file and pasting that content in a new side-by-side tab, the content of the two files is then kept in sync so that you can easily write code in the dedicated tab with full Visual Studio Code capabilities, such as syntax highlighting, code completion and other features that wouldn't be available when trying to write code inside the CDATA tag directly.
@@ -14,7 +18,7 @@ This is a simple Visual Studio Code extension written in TypeScript that allows 
 
 -   Supports various settings that you can change inside the Visual Studio Code settings panel.
 
-# Planned features
+# (Used to be) Planned features
 
 -   Close the associated CDATA files when closing the main XML file.
 
@@ -43,6 +47,18 @@ The extension has a few settings that you can edit inside Visual Studio Code (si
 -   updateDelay : Delay before syncing the changes of the CDATA files back to the XML file (in milliseconds). Keep in mind that a low enough value will trigger repetitive flashing for each keystroke. (You'll probably have to re-open the XML and CDATA files for this change to take effect). (Default is 1500).
 
 -   openDelay : Delay before opening the CDATA files (in milliseconds). Keep in mind that a low enough value might cause issues if there's multiple/big CDATA tags and you have linters that will take time to check each file. (Default is 500).
+
+# How to build the project
+
+Simply run the following commands after cloning the repository
+
+```
+npm install
+npm run compile
+npx vsce package
+```
+
+This should generate a `.vsix` file that you can then install into your VSCode editor
 
 # License
 
